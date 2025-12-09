@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Points → M/L/Z</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .note {
+            background-color: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .note a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .note a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .example {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 3px solid #999;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.secondary {
+            background-color: #2196F3;
+        }
+        button.secondary:hover {
+            background-color: #0b7dda;
+        }
+        button.danger {
+            background-color: #f44336;
+        }
+        button.danger:hover {
+            background-color: #da190b;
+        }
+        #resultArea {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            min-height: 100px;
+            border: 1px solid #ddd;
+        }
+        #resultArea h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        #result {
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SVG Points → M/L/Z</h1>
+        
+        <div class="note">
+            <p>When creating SVG zone boundary definitions, I used <a href="https://www.lddgo.net/en/image/coordinate-pick">Image Coordinate Picking Online</a>.</p>
+        </div>
+
+        <div class="section">
+            <label for="input">Enter points in the following format, for example:</label>
+            <div class="example">1. 724 , 491<br>
+2. 975 , 463<br>
+3. 1142 , 520<br>
+4. 859 , 551</div>
+            <textarea id="input" placeholder="Paste your coordinates here..."></textarea>
+        </div>
+
+        <div class="section">
+            <button onclick="insertExample()">Insert Example</button>
+            <button class="danger" onclick="clearInput()">Clear</button>
+            <button class="secondary" onclick="convert()">Convert</button>
+        </div>
+
+        <div id="resultArea" style="display:none;">
+            <h3>Result:</h3>
+            <div id="result"></div>
+            <button class="secondary" onclick="copyResult()" style="margin-top: 10px;">Copy</button>
+        </div>
+    </div>
+
+    <script>
+        function insertExample() {
+            const example = `1. 724 , 491
+2. 975 , 463
+3. 1142 , 520
+4. 859 , 551`;
+            document.getElementById('input').value = example;
+        }
+
+        function clearInput() {
+            document.getElementById('input').value = '';
+            document.getElementById('resultArea').style.display = 'none';
+        }
+
+        function convert() {
+            const input = document.getElementById('input').value;
+            const lines = input.split('\n').filter(line => line.trim());
+            
+            if (lines.length === 0) {
+                alert('Please enter at least one point');
+                return;
+            }
+
+            let points = [];
+            const regex = /(\d+)\s*,\s*(\d+)/;
+
+            for (let line of lines) {
+                const match = line.match(regex);
+                if (match) {
+                    points.push({x: parseInt(match[1]), y: parseInt(match[2])});
+                }
+            }
+
+            if (points.length === 0) {
+                alert('Could not parse any coordinates. Please check the format.');
+                return;
+            }
+
+            // Generate SVG path
+            let path = '';
+            for (let i = 0; i < points.length; i++) {
+                if (i === 0) {
+                    path += `M ${points[i].x}, ${points[i].y}`;
+                } else {
+                    path += ` L ${points[i].x}, ${points[i].y}`;
+                }
+            }
+            path += ' Z';
+
+            document.getElementById('result').textContent = path;
+            document.getElementById('resultArea').style.display = 'block';
+        }
+
+        function copyResult() {
+            const result = document.getElementById('result').textContent;
+            navigator.clipboard.writeText(result).then(() => {
+                alert('Result copied to clipboard!');
+            });
+        }
+
+        // Allow Enter key to convert
+        document.getElementById('input').addEventListener('keypress', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                convert();
+            }
+        });
+    </script>
+</body>
+</html>
