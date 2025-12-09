@@ -7,7 +7,7 @@
 **Status:** preliminary version  
 **License:** CC BY-NC-SA 4.0 http://creativecommons.org/licenses/by/4.0/
 
-LOADING: Copy the repository link into the extension download window https://github.com/PavOrlov/SillyTavern-Interactive-Map
+# LOADING: Copy the repository link into the extension download window https://github.com/PavOrlov/SillyTavern-Interactive-Map
 
 Created with love for the SillyTavern community (and for myself).
 
