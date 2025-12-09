@@ -1,15 +1,16 @@
 /**
- * SillyTavern-Interactive Map Extension - ВЕРСИЯ 1.0 Beta
- * Основной модуль расширения для интерактивных карт
- * 
- * Функциональность:
- * - Загрузка и отображение интерактивных карт
- * - Выполнение STScript команд при клике на зоны карты 
- * - Автоматическое обнаружение карт в папке "maps" через index.json
- * - Поддержка множества карт с динамическим выбором
- * - Возможность вкладывания карт одна в другую с переходом по уровням
- * - Валидация структуры данных карт
- */
+
+* SillyTavern-Interactive Map Extension - VERSION 1.0 Beta
+* Main module for interactive maps extension
+
+* Functionality:
+* - Loading and displaying interactive maps
+* - Executing STScript commands on map zone clicks
+* - Automatic map detection in "maps" folder via index.json
+* - Support for multiple maps with dynamic selection
+* - Ability to nest maps with level transitions
+* - Map data structure validation
+*/
 
 const EXTENSION_VERSION = '1.0 Beta';
 
@@ -17,11 +18,11 @@ import { loadMovingUIState } from '../../../power-user.js';
 import { dragElement } from '../../../RossAscends-mods.js';
 import { registerSlashCommand, executeSlashCommands } from '../../../slash-commands.js';
 
-// ===== КОНФИГУРАЦИЯ =====
+// ===== CONFIGURATION =====
 const extensionName = 'SillyTavern-Interactive Map';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-const DEFAULT_MAP = 'SillyTavern.json'; // Вынесено в константу
+const DEFAULT_MAP = 'SillyTavern.json'; // Moved to constant
 
 const SELECTORS = {
   SVG_CONTAINER: '#svg-container',
@@ -37,7 +38,7 @@ const mapSettings = {
   maxMapCache: 10,
   fetchTimeout: 10000,
   indexTimeout: 3000,
-  defaultMap: DEFAULT_MAP // Добавлено в настройки
+  defaultMap: DEFAULT_MAP // Added to settings
 };
 
 const mapCache = new Map();
@@ -47,22 +48,22 @@ const extensionState = {
   availableMaps: [],
   isMapLoaded: false,
   lastError: null,
-  currentMapElement: null, // Используется реально
-  // svgContainer: null,  ← УДАЛЕНИЯ: каждый раз ищется через getElementById
+  currentMapElement: null, // Actually used
+  // svgContainer: null, ← DELETION: searched via getElementById each time
 };
 
-// ===== ВАЛИДАЦИЯ =====
-/** 
- * Полная валидация структуры карты.
- * @param {unknown} data
- * @returns {{ valid: boolean, errors: string[] }}
- */
+// ===== VALIDATION =====
+/**
+* Full map structure validation.
+* @param {unknown} data
+* @returns {{ valid: boolean, errors: string[] }}
+*/
 function validateMapData(data) {
     /** @type {string[]} */
     const errors = [];
 
     if (!data || typeof data !== 'object') {
-        return { valid: false, errors: ['Данные карты должны быть объектом'] };
+        return { valid: false, errors: ['Map data must be an object'] };
     }
 
     /** @typedef {Object} MapBackground
@@ -84,18 +85,18 @@ function validateMapData(data) {
     const bg = map.backgroundImage;
 
     if (!bg || typeof bg.file !== 'string') {
-        errors.push('backgroundImage.file: обязателен и должен быть строкой');
+        errors.push('backgroundImage.file: required and must be a string');
     }
 
     const width = Number(bg?.width);
     const height = Number(bg?.height);
 
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-        errors.push('backgroundImage.width/height: должны быть положительными числами');
+        errors.push('backgroundImage.width/height: must be positive numbers');
     }
 
     if (!Array.isArray(map.shapes) || map.shapes.length === 0) {
-        errors.push('shapes: должен быть непустым массивом');
+        errors.push('shapes: must be non-empty array');
     } else {
         map.shapes.forEach((shape, i) => {
             validateShape(shape, i, errors);
@@ -106,14 +107,14 @@ function validateMapData(data) {
 }
 
 /**
- * Валидация отдельной фигуры карты.
- * @param {unknown} shape
- * @param {number} index
- * @param {string[]} errors
- */
+* Validation of individual map shape.
+* @param {unknown} shape
+* @param {number} index
+* @param {string[]} errors
+*/
 function validateShape(shape, index, errors) {
     if (!shape || typeof shape !== 'object') {
-        errors.push(`Shape[${index}]: должен быть объектом`);
+        errors.push(`Shape[${index}]: must be an object`);
         return;
     }
 
@@ -121,19 +122,19 @@ function validateShape(shape, index, errors) {
     const prefix = `Shape[${index}]`;
 
     if (!s.id || !s.path || !s.color || !s.script) {
-        errors.push(`${prefix}: отсутствуют обязательные поля (id, path, color, script)`);
+        errors.push(`${prefix}: missing required fields (id, path, color, script)`);
     }
 
     if (typeof s.script !== 'string') {
-        errors.push(`${prefix}.script: должен быть строкой`);
+        errors.push(`${prefix}.script: must be a string`);
     }
 
     if (typeof s.path !== 'string') {
-        errors.push(`${prefix}.path: должен быть строкой`);
+        errors.push(`${prefix}.path: must be a string`);
     }
 
     if (!isValidColor(s.color)) {
-        errors.push(`${prefix}.color: некорректный цвет "${s.color}"`);
+        errors.push(`${prefix}.color: invalid color "${s.color}"`);
     }
 }
 
@@ -141,43 +142,43 @@ function isValidColor(color) {
   return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 }
 
-// ===== ЗАЩИТА ОТ PATH TRAVERSAL =====
+// ===== PATH TRAVERSAL PROTECTION =====
 /**
- * Защита от path traversal атак
- * @param {string} filePath - Путь к файлу для проверки
- * @throws {Error} Если путь содержит опасные последовательности
- * @returns {boolean} true если путь безопасен
- */
+* Protection against path traversal attacks
+* @param {string} filePath - File path to check
+* @throws {Error} If path contains dangerous sequences
+* @returns {boolean} true if path is safe
+*/
 function validateAssetPath(filePath) {
   if (!filePath || typeof filePath !== 'string') {
-    throw new Error('Путь должен быть строкой');
+    throw new Error('Path must be a string');
   }
   
-  // Запретить выход за пределы папки
+  // Prevent exiting folder boundaries
   if (filePath.includes('..') || 
       filePath.startsWith('/') || 
       filePath.startsWith('\\') ||
       filePath.includes('\\\\')) {
-    throw new Error(`Недопустимый путь к файлу: ${filePath}`);
+    throw new Error(`Invalid file path: ${filePath}`);
   }
   
-  // Дополнительная проверка на абсолютные пути
+  // Additional check for absolute paths
   if (/^[a-zA-Z]:/.test(filePath)) {
-    throw new Error(`Абсолютные пути запрещены: ${filePath}`);
+    throw new Error(`Absolute paths forbidden: ${filePath}`);
   }
   
   return true;
 }
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ УТИЛИТЫ =====
+// ===== HELPER UTILITIES =====
 /**
- * Загружает JSON с таймаутом и правильной очисткой ресурсов
- */
+* Loads JSON with timeout and proper resource cleanup
+*/
 async function fetchJsonWithTimeout(url, {
     timeout = 10000,
     init = {},
     treatNotOkAsEmpty = false,
-    timeoutMessage = 'Timeout при загрузке ресурса',
+    timeoutMessage = 'Timeout loading resource',
 } = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -194,7 +195,7 @@ async function fetchJsonWithTimeout(url, {
         try {
             data = await response.json();
         } catch (parseError) {
-            throw new Error(`Ошибка парсинга JSON: ${parseError.message}`);
+            throw new Error(`JSON parse error: ${parseError.message}`);
         }
 
         return data;
@@ -204,12 +205,12 @@ async function fetchJsonWithTimeout(url, {
         }
         throw error;
     } finally {
-        // Гарантированная очистка таймаута
+        // Guaranteed timeout cleanup
         clearTimeout(timeoutId);
     }
 }
 
-// ===== ЗАГРУЗКА КАРТ =====
+// ===== MAP LOADING =====
 async function tryLoadMapsFromIndex() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), mapSettings.indexTimeout);
@@ -220,7 +221,7 @@ async function tryLoadMapsFromIndex() {
       signal: controller.signal
     });
     
-    // Очищаем только ОДИН раз при успехе
+    // Clear timeout only ONCE on success
     clearTimeout(timeoutId);
     
     if (!response.ok) {
@@ -231,25 +232,25 @@ async function tryLoadMapsFromIndex() {
     try {
       index = await response.json();
     } catch (parseError) {
-      console.debug('[Map] Ошибка парсинга index.json:', parseError);
+      console.debug('[Map] Parsing error index.json:', parseError);
       return [];
     }
     
     const maps = Array.isArray(index) ? index : (index.maps || []);
     if (mapSettings.debugMode && maps.length > 0) {
-      console.log('[Map] Загружены карты:', maps);
+      console.log('[Map] Maps loaded:', maps);
     }
     
     return maps;
     
   } catch (fetchError) {
-    // Очищаем таймаут только если ещё не был очищен
+    // Clear timeout only if not already cleared
     clearTimeout(timeoutId);
     
     if (fetchError.name === 'AbortError') {
-      console.debug('[Map] Timeout при загрузке index.json');
+      console.debug('[Map] Timeout loading index.json');
     } else {
-      console.debug('[Map] Ошибка загрузки index.json (это нормально):', fetchError.message);
+      console.debug('[Map] Error loading index.json (это нормально):', fetchError.message);
     }
     
     return [];
@@ -261,24 +262,24 @@ async function discoverAvailableMaps() {
     const indexedMaps = await tryLoadMapsFromIndex();
     extensionState.availableMaps = indexedMaps.length > 0 
       ? indexedMaps 
-      : [mapSettings.defaultMap]; // Использование константы
+      : [mapSettings.defaultMap]; // Using constant
     return extensionState.availableMaps;
   } catch (error) {
-    console.error('[Map] Ошибка обнаружения карт:', error);
+    console.error('[Map] Error discovering maps:', error);
     extensionState.availableMaps = [mapSettings.defaultMap];
     return [mapSettings.defaultMap];
   }
 }
 
 /**
- * Загружает данные карты из файла или кэша
- * @param {string} mapName - Имя/путь файла карты (относительно папки расширения)
- * @returns {Promise<Object>} Данные карты, прошедшие валидацию
- * @throws {Error} При таймауте, HTTP-ошибке или ошибке валидации
- */
+* Loads map data from file or cache
+* @param {string} mapName - Map file name/path (relative to extension folder)
+* @returns {Promise} Validated map data
+* @throws {Error} On timeout, HTTP error or validation error
+*/
 async function loadMapData(mapName) {
     if (mapCache.has(mapName)) {
-        if (mapSettings.debugMode) console.log('[Map] Загрузка из кэша:', mapName);
+        if (mapSettings.debugMode) console.log('[Map] Loading from cache:', mapName);
         return mapCache.get(mapName);
     }
 
@@ -288,23 +289,23 @@ async function loadMapData(mapName) {
         
         const data = await fetchJsonWithTimeout(mapPath, {
             timeout: mapSettings.fetchTimeout,
-            timeoutMessage: `Timeout при загрузке карты: ${mapName}`,
+            timeoutMessage: `Timeout loading map: ${mapName}`,
             treatNotOkAsEmpty: false,
         });
 
         const validation = validateMapData(data);
         if (!validation.valid) {
-            throw new Error(`Ошибка валидации: ${validation.errors.join('; ')}`);
+            throw new Error(`Validation error: ${validation.errors.join('; ')}`);
         }
 
-        // Управление кэшем
+        // Cache management
         if (mapCache.size >= mapSettings.maxMapCache) {
             const firstKey = mapCache.keys().next().value;
             mapCache.delete(firstKey);
         }
         mapCache.set(mapName, data);
 
-        if (mapSettings.debugMode) console.log('[Map] Карта загружена:', mapName);
+        if (mapSettings.debugMode) console.log('[Map] Map loaded:', mapName);
         return data;
     } catch (error) {
         extensionState.lastError = error;
@@ -312,9 +313,9 @@ async function loadMapData(mapName) {
     }
 }
 
-// ===== ВИЗУАЛИЗАЦИЯ =====
+// ===== VISUALIZATION =====
 function resolveAssetPath(filePath) {
-  // Проверка безопасности пути
+  // Path safety check
   validateAssetPath(filePath);
   
   if (filePath.startsWith('scripts/')) {
@@ -323,16 +324,16 @@ function resolveAssetPath(filePath) {
   return `${extensionFolderPath}/${filePath}`;
 }
 
-// ===== 🔈 АУДИО СОПРОВОЖДЕНИЕ КАРТ =====
+// ===== 🔈 MAP AUDIO SUPPORT =====
 
 let mapAudioElement = null;
 
 /**
- * Возвращает или создаёт скрытый audio элемент для карт
- * @returns {HTMLAudioElement} Audio элемент
- */
+* Returns or creates hidden audio element for maps
+* @returns {HTMLAudioElement} Audio element
+*/
 function getOrCreateMapAudioElement() {
-  // Проверяем, существует ли элемент ещё в DOM
+  // Check if element still exists in DOM
   if (mapAudioElement && document.body.contains(mapAudioElement)) {
     return mapAudioElement;
   }
@@ -341,7 +342,7 @@ function getOrCreateMapAudioElement() {
   audio.id = 'mapSoundPlayer';
   audio.style.display = 'none';
   audio.preload = 'auto';
-  // audio.loop = true; // включите, если нужно зацикливание
+  // audio.loop = true; // enable if looping needed
   
   document.body.appendChild(audio);
   mapAudioElement = audio;
@@ -350,8 +351,8 @@ function getOrCreateMapAudioElement() {
 }
 
 /**
- * Останавливает текущее аудио, если оно играет
- */
+* Stops current audio if playing
+*/
 function stopCurrentMapAudio() {
   if (!mapAudioElement || !document.body.contains(mapAudioElement)) {
     return;
@@ -361,27 +362,27 @@ function stopCurrentMapAudio() {
     mapAudioElement.pause();
     mapAudioElement.currentTime = 0;
   } catch (error) {
-    console.error('[Map] Ошибка при остановке аудио:', error);
+    console.error('[Map] Error stopping audio:', error);
   }
 }
 
 /**
- * Проигрывает аудиофайл из папки sounds расширения
- * @param {string} soundFileName - имя файла или относительный путь внутри sounds
- * @returns {Promise<void>}
- */
+* Plays audio file from extension sounds folder
+* @param {string} soundFileName - file name or relative path within sounds
+* @returns {Promise}
+*/
 async function playMapSound(soundFileName) {
     try {
         if (!soundFileName) return;
 
         let relativePath = soundFileName.trim();
 
-        // Гарантируем, что путь указывает в папку sounds
+        // Ensure path points to sounds folder
         if (!relativePath.toLowerCase().startsWith('sounds/')) {
             relativePath = `sounds/${relativePath}`;
         }
 
-        // Если нет расширения — добавляем .mp3 по умолчанию
+        // Add .mp3 by default if no extension
         const lower = relativePath.toLowerCase();
         const hasExt =
             lower.endsWith('.mp3') ||
@@ -394,66 +395,66 @@ async function playMapSound(soundFileName) {
             relativePath += '.mp3';
         }
 
-        // Проверка безопасности относительного пути внутри расширения
+        // Security check for relative path within extension
         validateAssetPath(relativePath);
 
         const audioSrc = `${extensionFolderPath}/${relativePath}`;
         const audio = getOrCreateMapAudioElement();
 
-        // Подготовка нового трека
+        // Prepare new track
         stopCurrentMapAudio();
         audio.src = audioSrc;
         audio.currentTime = 0;
 
         audio.onended = () => {
             if (mapSettings.debugMode) {
-                console.log('[Map] Аудио закончилось:', audioSrc);
+                console.log('[Map] Audio finished:', audioSrc);
             }
         };
 
         audio.onerror = (e) => {
-            const msg = `Ошибка аудиофайла карты: ${audioSrc}`;
-            console.error('[Map] Ошибка аудио:', msg, e);
+            const msg = `Map audio file error: ${audioSrc}`;
+            console.error('[Map] Audio error:', msg, e);
             if (typeof toastr !== 'undefined') {
                 toastr.error(msg);
             }
         };
 
         if (mapSettings.debugMode) {
-            console.log('[Map] Проигрываю аудио:', audioSrc);
+            console.log('[Map] Playing audio:', audioSrc);
         }
 
         const playPromise = audio.play();
         if (playPromise && typeof playPromise.then === 'function') {
             playPromise.catch(err => {
-                console.error('[Map] Ошибка при запуске воспроизведения:', err);
+                console.error('[Map] Error starting playback:', err);
                 if (typeof toastr !== 'undefined') {
-                    toastr.error('Не удалось запустить воспроизведение звука карты');
+                    toastr.error('Could not start map sound playback');
                 }
             });
         }
     } catch (error) {
         console.error('[Map] Ошибка в playMapSound:', error);
         if (typeof toastr !== 'undefined') {
-            toastr.error(`Ошибка звука: ${error.message}`);
+            toastr.error(`Audio error: ${error.message}`);
         }
     }
 }
 
-// ===== 🖼 ИЗОБРАЖЕНИЕ В ОКНЕ КАРТЫ =====
+// ===== 🖼 IMAGE IN MAP WINDOW =====
 let mapImageElement = null;
 let mapImageCloseButton = null;
 
 /**
- * Возвращает или создаёт img элемент внутри окна карты
- */
+* Returns or creates img element inside map window
+*/
 function getOrCreateMapImageElement() {
     const container = document.querySelector('#map .dragContent') || document.getElementById('map');
     if (!container) return null;
 
-    // Уже существует в нужном контейнере
+    // Already exists in correct container
     if (mapImageElement && container.contains(mapImageElement)) {
-        // Убедимся, что кнопка тоже в контейнере
+        // Ensure button is also in container
         if (mapImageCloseButton && !container.contains(mapImageCloseButton)) {
             container.appendChild(mapImageCloseButton);
         }
@@ -471,16 +472,16 @@ function getOrCreateMapImageElement() {
     img.style.objectFit = 'contain';
     img.style.borderRadius = '8px';
     img.style.background = 'rgba(0,0,0,.1)';
-    img.style.zIndex = '9'; // ниже видео (у видео 10), но поверх SVG
+    img.style.zIndex = '9'; // below video (video 10), above SVG
     img.style.display = 'none';
     container.appendChild(img);
     mapImageElement = img;
 
-    // Кнопка "Закрыть" (одна на всё изображение)
+    // Close button (one for entire image)
     if (!mapImageCloseButton) {
         const btn = document.createElement('button');
         btn.id = 'mapImageClose';
-        btn.textContent = 'Закрыть';
+        btn.textContent = 'Close';
         btn.style.position = 'absolute';
         btn.style.top = '48px';
         btn.style.right = '12px';
@@ -506,31 +507,31 @@ function getOrCreateMapImageElement() {
 }
 
 /**
- * Скрывает текущее изображение
- */
+* Hides current image
+*/
 function stopCurrentMapImage() {
     try {
-        // Прячем само изображение, если оно есть в DOM
+        // Hide image if it exists in DOM
         if (mapImageElement && document.body && document.body.contains(mapImageElement)) {
             mapImageElement.removeAttribute('src');
             mapImageElement.style.display = 'none';
         }
 
-        // Прячем кнопку "Закрыть", если она есть в DOM
+        // Hide Close button if it exists in DOM
         if (mapImageCloseButton && document.body && document.body.contains(mapImageCloseButton)) {
             mapImageCloseButton.style.display = 'none';
         }
     } catch (e) {
-        console.error('[Map] Ошибка при остановке изображения:', e);
+        console.error('[Map]  Error stopping image:', e);
     }
 }
 
 /**
- * Показывает изображение из папки images расширения
- * Поддерживаются: .png, .jpg, .jpeg, .webp, .gif
- * @param {string} imageName
- * @param {{sizePct?: number}} opts
- */
+* Shows image from extension images folder
+* Supports: .png, .jpg, .jpeg, .webp, .gif
+* @param {string} imageName
+* @param {{sizePct?: number}} opts
+*/
 async function showMapImage(imageName, opts = {}) {
     try {
         if (!imageName) return;
@@ -549,34 +550,34 @@ async function showMapImage(imageName, opts = {}) {
             lower.endsWith('.gif');
 
         if (!hasExt) {
-            // по умолчанию .png
+            // default to .png
             relativePath += '.png';
         }
 
-        // Проверка безопасности пути
+        // Path security check
         validateAssetPath(relativePath);
 
         const imgSrc = `${extensionFolderPath}/${relativePath}`;
         const img = getOrCreateMapImageElement();
         if (!img) {
             if (typeof toastr !== 'undefined') {
-                toastr.warning('Окно карты не открыто');
+                toastr.warning('Map window not open');
             }
             return;
         }
 
-        // Спрятать/очистить предыдущее изображение и кнопку
+        // Hide/clear previous image and button
         stopCurrentMapImage();
 
         img.style.display = 'block';
         img.src = imgSrc;
 
-        // Подгон под SVG, используем ту же функцию, что и для видео
+        // Resize to match SVG, use same function as video
         if (typeof resizeVideoToSvg === 'function') {
             resizeVideoToSvg(img);
         }
 
-        // Необязательный размер в процентах от SVG/контейнера
+        // Optional size in percentage of SVG/container
         if (opts.sizePct && Number.isFinite(+opts.sizePct)) {
             const pct = Math.max(10, Math.min(100, +opts.sizePct));
             img.style.width = (img.offsetWidth * pct / 100) + 'px';
@@ -588,31 +589,31 @@ async function showMapImage(imageName, opts = {}) {
         }
 
         img.onerror = (e) => {
-            console.error('[Map] Ошибка загрузки изображения для окна карты:', imgSrc, e);
+            console.error('[Map] Error loading image for map window:', imgSrc, e);
             if (typeof toastr !== 'undefined') {
-                toastr.error('Ошибка загрузки изображения для окна карты');
+                toastr.error('Error loading image for map window');
             }
         };
     } catch (error) {
-        console.error('[Map] Ошибка в showMapImage:', error);
+        console.error('[Map] Error in showMapImage:', error);
         if (typeof toastr !== 'undefined') {
-            toastr.error(`Ошибка изображения: ${error.message}`);
+            toastr.error(`Image error: ${error.message}`);
         }
     }
 }
 
-// ===== 🎬 ВИДЕО В ОКНЕ КАРТЫ =====
+// ===== 🎬 VIDEO IN MAP WINDOW =====
 let mapVideoElement = null;
 let mapVideoCloseButton = null;
 
 /**
- * Возвращает или создаёт video элемент внутри окна карты, подгонанный под размер SVG
- */
+* Returns or creates video element inside map window, sized to SVG
+*/
 function getOrCreateMapVideoElement() {
     const container = document.querySelector('#map .dragContent') || document.getElementById('map');
     if (!container) return null;
 
-    // Уже существует в нужном контейнере
+    // Already exists in correct container
     if (mapVideoElement && container.contains(mapVideoElement)) {
         resizeVideoToSvg(mapVideoElement);
         if (mapVideoCloseButton && !container.contains(mapVideoCloseButton)) {
@@ -621,7 +622,7 @@ function getOrCreateMapVideoElement() {
         return mapVideoElement;
     }
 
-    // Создаём видео
+    // Create video
     const video = document.createElement('video');
     video.id = 'mapVideoPlayer';
     video.controls = true;
@@ -640,19 +641,19 @@ function getOrCreateMapVideoElement() {
     container.appendChild(video);
     mapVideoElement = video;
 
-    // Кнопка "Закрыть" (одна на всё видео)
+    // Close button (one for entire video)
     if (!mapVideoCloseButton) {
         const btn = document.createElement('button');
         btn.id = 'mapVideoClose';
-        btn.textContent = 'Закрыть';
+        btn.textContent = 'Close';
 
         btn.style.position = 'absolute';
-        btn.style.top = '48px';          // Положение кнопки в окне проигрывателя 
+        btn.style.top = '48px';          // Button position in player window
         btn.style.right = '12px';
         btn.style.zIndex = '11';
 
-        btn.style.padding = '6px 14px';  // Размер кнопки
-        btn.style.fontSize = '14px';     // Размер шрифта
+        btn.style.padding = '6px 14px';  // Button size
+        btn.style.fontSize = '14px';     // Font size
 
         btn.style.border = 'none';
         btn.style.borderRadius = '6px';
@@ -673,13 +674,13 @@ function getOrCreateMapVideoElement() {
 }
 
 /**
- * Подгоняет видео под размер SVG контейнера
- */
+* Resizes video to match SVG container size
+*/
 function resizeVideoToSvg(video) {
     if (!video) return;
     const svgContainer = document.getElementById('svg-container');
     if (!svgContainer) {
-        // Fallback: полный размер контейнера
+        // Fallback: full container size
         video.style.width = '100%';
         video.style.height = '100%';
         video.style.top = '0';
@@ -699,12 +700,12 @@ function resizeVideoToSvg(video) {
 }
 
 /**
- * Останавливает текущее видео и очищает src
- */
+* Stops current video and clears src
+*/
 function stopCurrentMapVideo() {
     try {
         if (mapVideoElement) {
-            // Если видео уже удалено из DOM, просто сбросим ссылку
+            // If video already removed from DOM, just reset reference
             if (!document.body || !document.body.contains(mapVideoElement)) {
                 mapVideoElement = null;
             } else {
@@ -724,10 +725,10 @@ function stopCurrentMapVideo() {
 }
 
 /**
- * Проигрывает видео из папки movies расширения
- * @param {string} movieName - имя файла или относительный путь внутри movies
- * @param {{muted?:boolean, loop?:boolean, autoplay?:boolean, sizePct?:number}} opts
- */
+* Plays video from extension movies folder
+* @param {string} movieName - file name or relative path within movies
+* @param {{muted?:boolean, loop?:boolean, autoplay?:boolean, sizePct?:number}} opts
+*/
 async function playMapVideo(movieName, opts = {}) {
     try {
         if (!movieName) return;
@@ -754,19 +755,19 @@ async function playMapVideo(movieName, opts = {}) {
         const video = getOrCreateMapVideoElement();
         if (!video) {
             if (typeof toastr !== 'undefined') {
-                toastr.warning('Окно карты не открыто');
+                toastr.warning('Map window not open');
             }
             return;
         }
 
-        // Сначала корректно остановим предыдущее
+        // First correctly stop previous video
         if (video.src) {
             try {
                 video.pause();
                 video.removeAttribute('src');
                 video.load();
             } catch (e) {
-                console.error('[Map] Ошибка при очистке предыдущего видео:', e);
+                console.error('[Map] Error clearing previous video:', e);
             }
         }
 
@@ -790,14 +791,14 @@ async function playMapVideo(movieName, opts = {}) {
 
         video.onended = () => {
             if (mapSettings.debugMode) {
-                console.log('[Map] Видео закончилось:', videoSrc);
+                console.log('[Map] Video finished:', videoSrc);
             }
         };
 
         const p = video.autoplay ? video.play() : null;
         if (p && typeof p.then === 'function') {
             p.catch(err => {
-                console.error('[Map] Автозапуск видео отклонён политиками браузера:', err);
+                console.error('[Map] Video autoplay rejected by browser policies:', err);
             });
         }
 
@@ -806,9 +807,9 @@ async function playMapVideo(movieName, opts = {}) {
             window.addEventListener('resize', window._mapVideoResizeListener);
         }
     } catch (error) {
-        console.error('[Map] Ошибка в playMapVideo:', error);
+        console.error('[Map] Error in playMapVideo:', error);
         if (typeof toastr !== 'undefined') {
-            toastr.error(`Ошибка видео: ${error.message}`);
+            toastr.error(`Video error: ${error.message}`);
         }
     }
 }
@@ -828,12 +829,12 @@ function createInteractivePath(shape) {
     path.appendChild(title);
   }
 
-  // Создаём bound-функции один раз и сохраняем их в dataset
-  // Это позволит корректно удалять обработчики позже
+// Create bound functions once and save to dataset
+// This allows correct removal of handlers later
   const boundMouseOver = (e) => handleMouseOver.call(path, e);
   const boundMouseOut = (e) => handleMouseOut.call(path, e);
   
-  // Сохраняем ссылки на функции, чтобы потом удалить точно такие же
+// Save function references for later removal
   path._boundMouseOver = boundMouseOver;
   path._boundMouseOut = boundMouseOut;
   path._boundClick = handleClick;
@@ -871,15 +872,15 @@ function handleClick(event) {
   try {
     executeSlashCommands(event.target.dataset.script);
   } catch (error) {
-    console.error('[Map] Ошибка выполнения скрипта:', error);
-    if (typeof toastr !== 'undefined') toastr.error('Ошибка команды');
+    console.error('[Map] Error executing script:', error);
+    if (typeof toastr !== 'undefined') toastr.error('Command error');
   }
 }
 
-// ===== ФУНКЦИЯ ОЧИСТКИ КАРТЫ =====
+// ===== MAP CLEANUP FUNCTION =====
 /**
- * Очищает карту и удаляет обработчики событий для предотвращения утечек памяти
- */
+* Clears map and removes event handlers to prevent memory leaks
+*/
 function clearMap() {
     const svgContainer = document.getElementById('svg-container');
     if (svgContainer) {
@@ -906,15 +907,15 @@ function clearMap() {
     extensionState.currentMapElement = null;
 
     if (mapSettings.debugMode) {
-        console.log('[Map] Карта очищена');
+        console.log('[Map] Map cleared');
     }
 }
 
 /**
- * Инициализирует SVG-карту с фоном и интерактивными зонами
- * @param {Object} svgData - Объект с backgroundImage и shapes
- * @throws {Error} Если контейнер не найден или произошла ошибка инициализации
- */
+* Initializes SVG map with background and interactive zones
+* @param {Object} svgData - Object with backgroundImage and shapes
+* @throws {Error} If container not found or initialization error occurs
+*/
 function getSvgContainer() {
   return /** @type {SVGSVGElement | null} */ (
     document.querySelector(SELECTORS.SVG_CONTAINER)
@@ -927,17 +928,17 @@ function getMapSelect() {
   );
 }
 
-// пример использования в initMap:
+// Example usage in initMap:
 function initMap(svgData) {
   const svgElement = getSvgContainer();
   if (!svgElement) {
-    console.error('[Map] SVG контейнер не найден');
-    if (typeof toastr !== 'undefined') toastr.error('Контейнер карты не найден');
+    console.error('[Map] SVG container not found');
+    if (typeof toastr !== 'undefined') toastr.error('Map container not found');
     return;
   }
 
   try {
-    // Очистить предыдущую карту
+    // Clear previous map
     clearMap();
     
     const imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
@@ -951,8 +952,8 @@ function initMap(svgData) {
     imageElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     
     imageElement.addEventListener('error', () => {
-      console.error('[Map] Ошибка загрузки изображения:', imagePath);
-      if (typeof toastr !== 'undefined') toastr.error('Ошибка загрузки изображения');
+      console.error('[Map] Error loading image:', imagePath);
+      if (typeof toastr !== 'undefined') toastr.error('Error loading image');
     });
     
     svgElement.appendChild(imageElement);
@@ -972,33 +973,33 @@ function initMap(svgData) {
     extensionState.isMapLoaded = true;
     extensionState.currentMapElement = svgElement;
     if (mapSettings.debugMode) {
-      console.log(`[Map] Инициализация завершена. Зон: ${svgData.shapes.length}`);
+      console.log(`[Map] Initialization complete. Zones: ${svgData.shapes.length}`);
     }
   } catch (error) {
-    console.error('[Map] Ошибка инициализации:', error);
-    if (typeof toastr !== 'undefined') toastr.error('Ошибка инициализации карты');
+    console.error('[Map] Initialization error:', error);
+    if (typeof toastr !== 'undefined') toastr.error('Map initialization error');
     extensionState.isMapLoaded = false;
   }
 }
 
-// ===== УПРАВЛЕНИЕ UI =====
+/// ===== UI MANAGEMENT =====
 /**
- * Нормализует входной параметр (event/array/string) в строку имени карты
- * @param {*} input - Исходное значение (event, array или string)
- * @returns {string|null} Нормализованное имя карты или null
- */
+* Normalizes input parameter (event/array/string) to map name string
+* @param {*} input - Source value (event, array or string)
+* @returns {string|null} Normalized map name or null
+*/
 function normalizeMapInput(input) {
-    // Игнорируем click-события
+    // Ignore click events
     if (input && typeof input === 'object' && (input.type === 'click' || input.originalEvent)) {
         return null;
     }
     
-    // Преобразуем массив в строку
+    // Convert array to string
     if (Array.isArray(input)) {
         return input.join(' ').trim() || null;
     }
     
-    // Валидируем строку
+    // Validate string
     if (typeof input === 'string') {
         return input.trim() || null;
     }
@@ -1007,10 +1008,10 @@ function normalizeMapInput(input) {
 }
 
 /**
- * Ищет карту в списке доступных с поддержкой частичного совпадения
- * @param {string} searchTerm - Поисковый запрос
- * @returns {string|null} Полный путь карты или null
- */
+* Finds map in available list with partial match support
+* @param {string} searchTerm - Search query
+* @returns {string|null} Full map path or null
+*/
 function findMapByName(searchTerm) {
     if (!extensionState.availableMaps || extensionState.availableMaps.length === 0) {
         return null;
@@ -1021,14 +1022,14 @@ function findMapByName(searchTerm) {
     return extensionState.availableMaps.find(mapPath => {
         const mapLower = mapPath.toLowerCase();
         
-        // Точное совпадение
+        // Exact match
         if (mapLower === search) return true;
         
-        // Совпадение по имени файла без расширения (maps/SillyTavern.json → SillyTavern)
+        // Match by filename without extension (maps/SillyTavern.json → SillyTavern)
         if (mapLower.endsWith('/' + search + '.json')) return true;
         if (mapLower === search + '.json') return true;
         
-        // Совпадение по имени с расширением (maps/SillyTavern.json → SillyTavern.json)
+        /// Match by name with extension (maps/SillyTavern.json → SillyTavern.json)
         if (mapLower.endsWith('/' + search)) return true;
         if (mapLower === search) return true;
         
@@ -1037,30 +1038,30 @@ function findMapByName(searchTerm) {
 }
 
 /**
- * Разрешает имя карты: либо находит в индексе, либо использует как прямой путь
- * @param {string} input - Имя карты или путь
- * @returns {string} Полный путь к файлу карты
- */
+* Resolves map name: either finds in index or uses as direct path
+* @param {string} input - Map name or path
+* @returns {string} Full path to map file
+*/
 function resolveMapPath(input) {
     if (!input) return null;
     
     const trimmed = input.trim();
     
-    // Попытка найти в доступных картах
+    // Try to find in available maps
     const found = findMapByName(trimmed);
     if (found) {
-        if (mapSettings.debugMode) console.log('[Map] Карта найдена в индексе:', found);
+        if (mapSettings.debugMode) console.log('[Map]  Map found in index:', found);
         return found;
     }
     
-    // Fallback: используем ввод как прямой путь
+    // Fallback: use input as direct path
     let mapPath = trimmed;
     if (!mapPath.toLowerCase().endsWith('.json')) {
         mapPath += '.json';
     }
     
     if (mapSettings.debugMode) {
-        console.warn('[Map] Карта не найдена в индексе, используется прямой путь:', mapPath);
+        console.warn('[Map] Map not found in index, using direct path:', mapPath);
     }
     
     return mapPath;
@@ -1068,25 +1069,25 @@ function resolveMapPath(input) {
 
 async function showMap(input) {
   try {
-    // Проверяем наличие jQuery
+    // Check for jQuery presence
     if (typeof jQuery === 'undefined' || !$) {
-      throw new Error('jQuery не найден');
+      throw new Error('jQuery not found');
     }
     
-    // Нормализуем входные данные
+    // Normalize input data
     const normalizedInput = normalizeMapInput(input);
     
-    // Если явно передано имя карты, пытаемся его найти/разрешить
+    // If map name explicitly provided, try to find/resolve it
     let targetMap = normalizedInput
       ? resolveMapPath(normalizedInput)
       : extensionState.currentLoadedMap;
     
     if (!targetMap) {
-      if (typeof toastr !== 'undefined') toastr.warning('Карта не выбрана');
+      if (typeof toastr !== 'undefined') toastr.warning('Map not selected');
       return;
     }
     
-    // Загружаем и инициализируем
+    // Load and initialize
     makeMovable();
     const svgData = await loadMapData(targetMap);
     extensionState.currentLoadedMap = targetMap;
@@ -1095,24 +1096,24 @@ async function showMap(input) {
       await playMapSound(svgData.mapSound);
     }
     
-    // Синхронизируем селектор если он есть
+    // Sync selector if it exists
     const select = $('#mapSelections');
     if (select.length > 0 && select.find(`option[value="${targetMap}"]`).length > 0) {
       select.val(targetMap);
     }
     
     initMap(svgData);
-    if (typeof toastr !== 'undefined') toastr.success(`Карта "${targetMap}" загружена`);
+    if (typeof toastr !== 'undefined') toastr.success(`Map "${targetMap}" loaded`);
     
   } catch (error) {
-    console.error('[Map] Ошибка показа карты:', error);
+    console.error('[Map] Error showing map:', error);
     let errorMsg = error.message;
     
     if (errorMsg.includes('404')) {
-      errorMsg = `Файл карты не найден (${error.message}). Проверьте имя и index.json`;
+      errorMsg = `Map file not found (${error.message}). Check name and index.json`;
     }
     
-    if (typeof toastr !== 'undefined') toastr.error(`Ошибка: ${errorMsg}`);
+    if (typeof toastr !== 'undefined') toastr.error(`Error: ${errorMsg}`);
     extensionState.lastError = error;
   }
 }
@@ -1126,8 +1127,8 @@ function makeMovable(id = 'map') {
     
     const template = $('#generic_draggable_template').html();
     if (!template) {
-      console.error('[Map] Шаблон не найден');
-      if (typeof toastr !== 'undefined') toastr.error('Ошибка: шаблон окна не найден');
+      console.error('[Map] Template not found');
+      if (typeof toastr !== 'undefined') toastr.error('Error: window template not found');
       return;
     }
     
@@ -1135,9 +1136,9 @@ function makeMovable(id = 'map') {
     newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
     newElement.attr('forChar', id).attr('id', id);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
-    newElement.find('.dragTitle').text('Интерактивная карта');
+    newElement.find('.dragTitle').text('Interactive Map');
     
-    // Создание SVG контейнера 
+    // Create SVG container 
     newElement.append('<svg id="svg-container" style="width: 100%; height: 100%;"></svg>');
     newElement.addClass('no-scrollbar');
     
@@ -1147,7 +1148,7 @@ function makeMovable(id = 'map') {
     $('#dragMap').css('display', 'block');
     $('body').append(newElement);
     
-    // Проверка наличия функции перед вызовом
+    // Check for function before calling
     if (typeof loadMovingUIState === 'function') {
       loadMovingUIState();
     }
@@ -1160,20 +1161,20 @@ function makeMovable(id = 'map') {
       return false;
     });
     
-    if (mapSettings.debugMode) console.log(`[Map] Окно создано: ${id}`);
+    if (mapSettings.debugMode) console.log(`[Map] Window created: ${id}`);
   } catch (error) {
     console.error('[Map] Ошибка создания окна:', error);
-    if (typeof toastr !== 'undefined') toastr.error('Ошибка создания окна карты');
+    if (typeof toastr !== 'undefined') toastr.error('Error creating map window');
   }
 }
 
-// ===== ОБРАБОТЧИК ЗАКРЫТИЯ ОКНА =====
+// ===== WINDOW CLOSE HANDLER =====
 /**
- * Устанавливает обработчик закрытия окна карты
- * Удаляет окно и очищает состояние SVG
- */
+* Sets up map window close handler
+* Removes window and clears SVG state
+*/
 function setupCloseHandler() {
-    // Делегируем только для элементов закрытия внутри контейнера карты
+    // Delegate only for close elements inside map container
     $(document).on('click', '#map .dragClose', function (e) {
         e.stopPropagation();
 
@@ -1181,7 +1182,7 @@ function setupCloseHandler() {
         const $element = $(`#${relatedId}`);
 
         if ($element.length === 0) {
-            console.warn(`[Map] Элемент #${relatedId} не найден`);
+            console.warn(`[Map] Element #${relatedId} not found`);
             return;
         }
 
@@ -1194,42 +1195,42 @@ function setupCloseHandler() {
             $element.off().remove();
 
             if (mapSettings.debugMode) {
-                console.log(`[Map] Окно закрыто: ${relatedId}`);
+                console.log(`[Map] Window closed: ${relatedId}`);
             }
         } catch (error) {
-            console.error('[Map] Ошибка при закрытии окна:', error);
+            console.error('[Map] Error closing window:', error);
         }
     });
 }
 
-// Вызвать один раз при инициализации расширения
+/// Call once during extension initialization
 let closeHandlerInitialized = false;
 
-// В jQuery(() => { ... }):
+// In jQuery(() => { ... }):
 if (!closeHandlerInitialized) {
     setupCloseHandler();
     closeHandlerInitialized = true;
 }
 
-// ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ГЕНЕРАЦИИ НАЗВАНИЙ КАРТ =====
+// ===== HELPER FUNCTION FOR MAP NAME GENERATION =====
 /**
- * Преобразует путь карты в её простое название без maps/ и .json
- * Примеры:
- *   'Name.json' → 'Name'
- *   'maps/Name.json' → 'Name'
- *   'dungeons/city/Main.json' → 'Main'
- * @param {string} mapPath - Путь к карте
- * @returns {string} Отображаемый лейбл
- */
+* Converts map path to simple name without maps/ and .json
+* Examples:
+* 'Name.json' → 'Name'
+* 'maps/Name.json' → 'Name'
+* 'dungeons/city/Main.json' → 'Main'
+* @param {string} mapPath - Map path
+* @returns {string} Display label
+*/
 function getMapLabel(mapPath) {
   if (!mapPath) return 'Unknown';
   
-  // Берём только имя файла
+  // Get filename only
   let filename = mapPath.includes('/') 
     ? mapPath.split('/').pop() 
     : mapPath;
   
-  // Удаляем расширение .json
+// Remove .json extension
   if (filename.toLowerCase().endsWith('.json')) {
     filename = filename.slice(0, -5);
   }
@@ -1237,23 +1238,23 @@ function getMapLabel(mapPath) {
   return filename;
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ ВЫБОРА КАРТ =====
+// ===== MAP SELECTION INITIALIZATION =====
 /**
- * Инициализирует dropdown выбора карт
- */
+* Initializes map selection dropdown
+*/
 async function initializeMapSelection() {
     try {
         const maps = await discoverAvailableMaps();
         const $select = $('#mapSelections');
 
         if ($select.length === 0) {
-            console.warn('[Map] Dropdown выбора карт не найден');
+            console.warn('[Map] Map selection dropdown not found');
             return;
         }
 
         $select.empty();
 
-        // Красивые названия через getMapLabel
+        // Nice names via getMapLabel
         maps.forEach(map => {
             const label = getMapLabel(map);
             const $option = $('<option>')
@@ -1267,53 +1268,53 @@ async function initializeMapSelection() {
             $select.val(maps[0]);
         }
 
-        // Обработчик изменения выбора
+        // Change handler
         $select.off('change').on('change', function () {
             extensionState.currentLoadedMap = $(this).val();
             if (mapSettings.debugMode) {
-                console.log('[Map] Выбрана карта:', extensionState.currentLoadedMap);
+                console.log('[Map] Selected map:', extensionState.currentLoadedMap);
             }
         });
 
         if (mapSettings.debugMode) {
-            console.log(`[Map] Инициализация выбора завершена. Карт: ${maps.length}`);
+            console.log(`[Map] Selection initialization complete. Maps: ${maps.length}`);
         }
     } catch (error) {
-        console.error('[Map] Ошибка инициализации выбора:', error);
+        console.error('[Map] Selection initialization error:', error);
         if (typeof toastr !== 'undefined') {
-            toastr.error('Ошибка инициализации выбора карт');
+            toastr.error('Error initializing map selection');
         }
     }
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ РАСШИРЕНИЯ =====
+// ===== EXTENSION INITIALIZATION =====
 jQuery(async () => {
-  // Проверка необходимых зависимостей
+  // Check for required dependencies
   if (typeof jQuery === 'undefined') {
-    console.error('[Map] jQuery не найден - расширение не может быть инициализировано');
+    console.error('[Map] jQuery not found - extension cannot be initialized');
     return;
   }
   
   if (!document.getElementById('extensionsMenu')) {
-    console.error('[Map] Меню расширений не найдено - расширение не может быть инициализировано');
+    console.error('[Map] Extensions menu not found - extension cannot be initialized');
     return;
   }
   
-  console.log('[Map] Инициализация расширения...');
+  console.log('[Map] Extension initialization...');
   
    try {
     await initializeMapSelection();
     
-    // Инициализируем closeHandler ровно один раз
+    // Initialize closeHandler exactly once
         if (!closeHandlerInitialized) {
           setupCloseHandler();
           closeHandlerInitialized = true;
         }
 
-// Создание кнопки
+// Button creation
 const button = $(`
     <button id="map_start" type="button" class="list-group-item flex-container flexGap5 interactable" tabindex="0" role="listitem">
-        🌍 Последняя выбранная карта
+        🌍 Last Selected Map
     </button>
 `).css({
     fontFamily: 'var(--mainFontFamily), sans-serif',
@@ -1324,14 +1325,13 @@ const button = $(`
 $('#extensionsMenu').append(button);
 $('#map_start').on('click', showMap);
 
-// ===== ОБЩИЕ УТИЛИТЫ ДЛЯ SLASH-КОМАНД =====
-
+// ===== COMMON UTILITIES FOR SLASH COMMANDS =====
 /**
- * Приводит args/value к одной строке аргументов.
- * @param {unknown} args
- * @param {unknown} value
- * @returns {string}
- */
+* Brings args/value to single argument string.
+* @param {unknown} args
+* @param {unknown} value
+* @returns {string}
+*/
 function getRawArgs(args, value) {
     if (typeof value === 'string' && value.trim()) {
         return value.trim();
@@ -1348,7 +1348,7 @@ function getRawArgs(args, value) {
     return '';
 }
 
- // 🌍 Регистрация команды показа карты
+ // 🌍 Register show map command
     registerSlashCommand(
         'showmap',
         async (args, value) => {
@@ -1356,17 +1356,17 @@ function getRawArgs(args, value) {
                 await showMap(value || args);
                 return '';
             } catch (error) {
-                console.error('[Map] Ошибка команды /showmap:', error);
+                console.error('[Map] Error in /showmap command:', error);
                 return `Ошибка: ${error.message}`;
             }
         },
         [],
-        'Показать интерактивную карту (/showmap [имя_карты])',
+        'Show interactive map (/showmap [map_name])',
         true,
         true
     );
 
-// 🔈🎵 Загрузка аудио файла: /showmap_sound имя_звука [sound=имя_другого_файла]
+// 🔈🎵 Load audio file: /showmap_sound sound_name [sound=other_file_name]
 registerSlashCommand(
     'showmap_sound',
     async (args, value) => {
@@ -1374,84 +1374,84 @@ registerSlashCommand(
             let raw = getRawArgs(args, value);
 
             if (!raw) {
-                return 'Использование: /showmap_sound [имя_звука] [sound=имя_другого_файла]';
+                return 'Usage: /showmap_sound [sound_name] [sound=other_file_name]';
             }
 
-            // --- разбор опционального имени звука через named-аргумент sound=... ---
+            // --- parse optional sound name via named argument sound=... ---
             let soundName = null;
             let soundPart = raw;
 
-            // sound="..." (двойные кавычки)
+            // sound="..." (double quotes)
             let m = soundPart.match(/sound=\"([^\"]+)\"/i);
 
             if (!m) {
-                // sound='...' (одинарные кавычки)
+                // sound='...' (single quotes)
                 m = soundPart.match(/sound='([^']+)'/i);
             }
 
             if (!m) {
-                // sound=без_пробелов
+                // sound=without_spaces
                 m = soundPart.match(/sound=([^\s]+)/i);
             }
 
             if (m) {
                 soundName = m[1];
-                // выкидываем этот фрагмент из строки
+                // remove this fragment from string
                 soundPart = soundPart.replace(m[0], '').trim();
             }
 
-            // Всё, что осталось, считаем базовым именем звука
+            // Everything remaining is base sound name
             const baseName = soundPart;
 
             if (!baseName && !soundName) {
-                return 'Не указано имя звука. Пример: /showmap_sound "Secluded corner"';
+                return 'Sound name not specified. Example: /showmap_sound "Secluded corner"';
             }
 
-            // Если отдельное имя звука не передано, используем baseName
+            // If separate sound name not provided, use baseName
             if (!soundName) {
                 soundName = baseName;
             }
 
-            // Только проигрывание звука, карту НЕ трогаем
+            // Only play sound, do NOT touch map
             await playMapSound(soundName);
             return '';
         } catch (error) {
-            console.error('[Map] Ошибка команды /showmap_sound:', error);
+            console.error('[Map] Error in /showmap_sound command:', error);
             return `Ошибка: ${error.message}`;
         }
     },
     [],
-    'Проиграть звук из папки sounds (/showmap_sound [имя_звука] [sound=имя_другого_файла])',
+    'Play sound from sounds folder (/showmap_sound [sound_name] [sound=other_file_name])',
     true,
     true
 );
 
 
-// 🔈🔇 Слэш команда для прекращения воспроизведения аудиофайла: /stopsound
+// 🔈🔇 Slash command to stop audio: /stopsound
 registerSlashCommand(
     'stopsound',
     async (args, value) => {
         try {
             stopCurrentMapAudio();
             if (mapSettings.debugMode) {
-                console.log('[Map] Звук остановлен');
+                console.log('[Map] Sound stopped');
             }
             if (typeof toastr !== 'undefined') {
-                toastr.success('Звук карты остановлен');
+                toastr.success('Map sound stopped');
             }
             return '';
         } catch (error) {
-            console.error('[Map] Ошибка команды /stopsound:', error);
-            return `Ошибка: ${error.message}`;
+            console.error('[Map] Error in /stopsound command:', error);
+            return `Error: ${error.message}`;
         }
     },
     [],
-    'Остановить проигрывание звука карты',
+    'Stop map audio playback',
     true,
     true
 );
 
-// 🖼 Показ изображения в окне карты из папки images: /showmap_image файл [size=80]
+// 🖼 Show image in map window from images folder: /showmap_image file [size=80]
 registerSlashCommand(
     'showmap_image',
     async (args, value) => {
@@ -1459,10 +1459,10 @@ registerSlashCommand(
             let raw = getRawArgs(args, value);
 
             if (!raw) {
-                return 'Использование: /showmap_image имя_файла [size=80]';
+                return 'Usage: /showmap_image filename [size=80]';
             }
 
-            // Разбор опции size=NN
+            // Parse size option
             const opt = {};
             const mSize = raw.match(/size=(\d{1,3})/i);
 
@@ -1474,39 +1474,39 @@ registerSlashCommand(
             await showMapImage(raw, opt);
             return '';
         } catch (e) {
-            console.error('[Map] Ошибка команды /showmap_image:', e);
+            console.error('[Map] Error in /showmap_image command:', e);
             return `Ошибка: ${e.message}`;
         }
     },
     [],
-    'Показать изображение в окне карты из папки images (/showmap_image файл [size=80])',
+    'Show image in map window from images folder (/showmap_image file [size=80])',
     true,
     true
 );
 
 
-// 🖼🛑 Скрыть изображение
+// 🖼🛑 Hide image
 registerSlashCommand(
     'stopimage',
     async () => {
         try {
             stopCurrentMapImage();
             if (typeof toastr !== 'undefined') {
-                toastr.success('Изображение скрыто');
+                toastr.success('Image hidden');
             }
             return '';
         } catch (e) {
-            console.error('[Map] Ошибка команды /stopimage:', e);
+            console.error('[Map] Error in /stopimage command:', e);
             return `Ошибка: ${e.message}`;
         }
     },
     [],
-    'Скрыть изображение в окне карты',
+    'Hide image in map window',
     true,
     true
 );
 
-// 🎬 Показ видео в окне карты из папки movies: /showmap_video файл [muted=1] [loop=1] [size=40]
+// 🎬 Show video in map window from movies folder: /showmap_video file [muted=1] [loop=1] [size=40]
 registerSlashCommand(
     'showmap_video',
     async (args, value) => {
@@ -1514,10 +1514,10 @@ registerSlashCommand(
             let raw = getRawArgs(args, value);
 
             if (!raw) {
-                return 'Использование: /showmap_video имя_файла [muted=1] [loop=1] [size=40]';
+                return 'Usage: /showmap_video filename [muted=1] [loop=1] [size=40]';
             }
 
-            // Разбор опций
+            // Parse options
             const opt = {};
 
             const mMuted = raw.match(/muted=(\d+)/i);
@@ -1538,63 +1538,63 @@ registerSlashCommand(
                 raw = raw.replace(mSize[0], '').trim();
             }
 
-            // По требованию — карту НЕ загружаем и НЕ вызываем showMap
+            // Per request — do NOT load map and do NOT call showMap
             await playMapVideo(raw, opt);
             return '';
         } catch (e) {
-            console.error('[Map] Ошибка команды /showmap_video:', e);
+            console.error('[Map]  Error in /showmap_video command:', e);
             return `Ошибка: ${e.message}`;
         }
     },
     [],
-    'Показать видео в окне карты из папки movies (/showmap_video файл [muted=1] [loop=1] [size=40])',
+    'Show video in map window from movies folder (/showmap_video file [muted=1] [loop=1] [size=40])',
     true,
     true
 );
 
-// 🎬🛑 Остановить видео
+// 🎬🛑 Stop video
 registerSlashCommand(
     'stopvideo',
     async () => {
         try {
             stopCurrentMapVideo();
-            if (typeof toastr !== 'undefined') toastr.success('Видео остановлено');
+            if (typeof toastr !== 'undefined') toastr.success('Video stopped');
             return '';
         } catch (e) {
-            console.error('[Map] Ошибка команды /stopvideo:', e);
+            console.error('[Map]  Error in /stopvideo command:', e);
             return `Ошибка: ${e.message}`;
         }
     },
     [],
-    'Остановить видео в окне карты',
+    'Stop video in map window',
     true,
     true
 );
 
-    // UI настройки
+    // UI settings
         const settingsHtml = `
             <div class="map_settings">
         <div class="inline-drawer">
           <div class="inline-drawer-toggle inline-drawer-header">
-            <b>🌍 Интерактивные карты</b>
+            <b>🌍 Interactive Maps</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
           </div>
           <div class="inline-drawer-content">
             <div class="flex-container flexnowrap">
-              <label for="mapSelections" style="margin-right: 10px; white-space: nowrap;">Выбор карты из папки maps:</label>
+              <label for="mapSelections" style="margin-right: 10px; white-space: nowrap;">Select map from maps folder:</label>
               <select id="mapSelections" name="map-selection" class="flex1 text_pole">
-                <option value="">Загрузка...</option>
+                <option value="">Loading...</option>
               </select>
             </div>
             
             <div class="flex-container flexnowrap" style="margin-top: 10px; gap: 10px;">
               <div id="map_load" class="menu_button menu_button_icon" style="flex: 1;">
                 <div class="fa-solid fa-folder-open"></div>
-                <span>Загрузить карту</span>
+                <span>Load Map</span>
               </div>
               <div id="map_refresh" class="menu_button menu_button_icon" style="flex: 1;">
                 <div class="fa-solid fa-refresh"></div>
-                <span>Обновить</span>
+                <span>Refresh</span>
               </div>
             </div>
           </div>
@@ -1606,21 +1606,21 @@ registerSlashCommand(
     
     $('#map_load').on('click', showMap);
     $('#map_refresh').on('click', async () => {
-      if (typeof toastr !== 'undefined') toastr.info('Обновление списка карт...');
+      if (typeof toastr !== 'undefined') toastr.info('Refreshing map list...');
       
       mapCache.clear();
       extensionState.availableMaps = [];
       await initializeMapSelection();
       
-      if (typeof toastr !== 'undefined') toastr.success('Карты обновлены!');
+      if (typeof toastr !== 'undefined') toastr.success('Maps refreshed!');
     });
 
-    console.log(`[SillyTavern-Interactive Map] ✅ v${EXTENSION_VERSION} инициализировано`);
+    console.log(`[SillyTavern-Interactive Map] ✅ v${EXTENSION_VERSION} initialized`);
 
   } catch (error) {
-    console.error('[Map] Ошибка инициализации:', error);
+    console.error('[Map] Initialization error:', error);
     if (typeof toastr !== 'undefined') {
-      toastr.error('Ошибка инициализации расширения');
+      toastr.error('Extension initialization error');
     }
   }
 });
