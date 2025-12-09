@@ -69,7 +69,7 @@ scripts/extensions/third-party/SillyTavern-Interactive Map/
 
 ## Map File Format
 
-Each map is a JSON file with the following structure (example):
+Each map is a .png image and a JSON file defining the zones marked on the image and the scripts linked to them with the following structure (example):
 
 ```json
 {
