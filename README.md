@@ -2,12 +2,12 @@
 
 ## Description
 **Version:** 1.0 Beta  
-**Author:** Pavel Orlov  
+**Author:** Pavel Orlov © 
 **Adaptation:** SillyTavern 1.13.5+  
 **Status:** preliminary version  
 **License:** CC BY-NC-SA 4.0 http://creativecommons.org/licenses/by/4.0/
 
-**LOADING: Copy the repository link into the extension download window https://github.com/PavOrlov/SillyTavern-Interactive-Map**
+**📂LOADING: Copy the repository link into the extension download window https://github.com/PavOrlov/SillyTavern-Interactive-Map Then activate it in the "Installed extensions" menu by checking ☑**
 
 Created with love for the SillyTavern community (and for myself).
 
@@ -24,7 +24,7 @@ There is absolute creative freedom — from interactive maps of galaxies and sta
 
 ⚠️ **Important Copyright Notice**
 
-This plugin complies with the CC Attribution — Noncommercial — Share Alike license agreement (abbreviated CC BY-NC-SA 4.0), with the original author being Pavel Evgenyevich Orlov.
+This plugin complies with the CC Attribution — Noncommercial — Share Alike license agreement (abbreviated CC BY-NC-SA 4.0), with the original author being Pavel Orlov ©.
 
 📜 **Terms of Use:**
 
