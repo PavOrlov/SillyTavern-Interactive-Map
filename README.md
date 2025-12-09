@@ -1,4 +1,4 @@
-https://postimg.cc/62RZfMpP
+<img width="1279" height="731" alt="image" src="https://github.com/user-attachments/assets/4b836e09-ddb4-44b1-a238-2aea494d7ae8" />
 
 # SillyTavern-Interactive Map Extension
 
