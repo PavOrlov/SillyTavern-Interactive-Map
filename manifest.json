@@ -1,0 +1,10 @@
+{
+    "display_name": "🌍 Interactive maps",
+    "loading_order": 9,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "Pavel Orlov",
+    "version": "1.0 Beta",
+    "description": "An interactive map system with clickable locations for SillyTavern"
+}
