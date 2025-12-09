@@ -1,0 +1,89 @@
+{
+	"version": "1.0 Beta",
+        "mapSound": "Kevin MacLeod - Sunshine", 
+	"metadata": {
+		"name": "Magnolia-Park",
+		"author": "Pavel Orlov",
+		"description": "Interactive map of Magnolia Park with clickable locations",
+		"created": "2025-11-01",
+		"updated": "2025-11-04"
+	},
+	"backgroundImage": {
+		"file": "maps/Magnolia Park.png",
+		"width": 1792,
+		"height": 1024,
+		"alt": "Magnolia-Park"
+	},
+	"shapes": [
+		{
+			"id": "fast-food",
+			"type": "shop",
+			"name": "fast-food",
+			"tooltip": "Fast food - click to eat",
+			"path": "M 807, 433 L 721, 425 L 630, 430 L 630, 413 L 611, 404 L 591, 411 L 574, 428 L 414, 443 L 396, 465 L 406, 489 L 430, 501 L 499, 511 L 553, 513 L 622, 515 L 685, 510 L 736, 504 L 776, 485 L 799, 467 Z",
+			"color": "#CC0000",
+			"opacity": 0.3,
+			"script": "/showmap_sound Kevin MacLeod - Lobby-Time | /sys {{user}} and {{char}} each order two hot dogs with ketchup and mustard and, sitting at the table and chatting carefree, eat with gusto"
+		},
+		{
+			"id": "coffee-shop",
+			"type": "shop",
+			"name": "coffee-shop",
+			"tooltip": "Great coffee - click to try it",
+			"path": "M 1055, 385 L 1054, 416 L 1085, 420 L 1117, 427 L 1135, 421 L 1151, 406 L 1157, 397 L 1155, 379 L 1150, 378 L 1152, 362 L 1164, 361 L 1168, 352 L 1151, 344 L 1151, 339 L 1128, 329 L 1116, 332 L 1111, 325 L 1101, 319 L 1098, 315 L 1077, 318 L 1071, 326 L 1069, 337 L 1056, 345 L 1054, 403 Z",
+			"color": "#0066FF",
+			"opacity": 0.3,
+			"script": "/showmap_sound Kevin MacLeod - Carefree | /sys {{user}} and {{char}} order a cup of aromatic espresso with marshmallows and, sitting at a table, drink coffee and enjoy the conversation"
+		},
+		{
+			"id": "Chess-table",
+			"type": "object",
+			"name": "Chess-table",
+			"tooltip": "Chess table - don't pass by!",
+			"path": "M 922, 415 L 902, 419 L 892, 432 L 889, 444 L 890, 465 L 904, 483 L 902, 497 L 882, 512 L 889, 543 L 957, 544 L 959, 532 L 962, 511 L 947, 498 L 945, 480 L 954, 464 L 957, 443 L 947, 422 L 928, 415 Z",
+			"color": "#00CC00",
+			"opacity": 0.3,
+			"script": "/showmap Chess table"
+		},
+		{
+			"id": "flowers",
+			"type": "nature",
+			"name": "flowers",
+			"tooltip": "Flower bed - come closer",
+			"path": "M 593, 1020 L 510, 1011 L 504, 982 L 486, 978 L 473, 937 L 504, 899 L 501, 882 L 485, 875 L 491, 830 L 528, 812 L 565, 816 L 576, 829 L 593, 831 L 622, 795 L 656, 787 L 676, 802 L 690, 794 L 683, 777 L 692, 750 L 710, 746 L 732, 751 L 734, 769 L 748, 800 L 759, 812 L 776, 796 L 816, 792 L 822, 804 L 844, 813 L 867, 807 L 902, 821 L 907, 845 L 937, 872 L 937, 884 L 916, 886 L 898, 896 L 923, 918 L 924, 928 L 891, 959 L 898, 972 L 883, 988 L 836, 987 L 811, 1005 L 779, 981 L 765, 982 L 771, 996 L 762, 1007 L 728, 993 L 692, 1020 Z",
+			"color": "#FF69B4",
+			"opacity": 0.3,
+			"script": " /showmap_sound Kevin MacLeod - Canon in D Major | /showmap_image flower bed | /sys {{user}} and {{char}} notice a flowerbed at the entrance to the park and a sign with the name of the variety - Garden Breeze"
+		},
+		{
+			"id": "return",
+			"type": "action",
+			"name": "return",
+			"tooltip": "Willow Creek - click to return",
+			"path": "M 1661, 26 L 1663, 123 L 1761, 123 L 1760, 27 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/showmap Willow Creek"
+		},
+                {
+			"id": "Sound",
+			"type": "action",
+			"name": "Sound",
+			"tooltip": "Audio file - click to play",
+			"path": "M 1541, 31 L 1541, 126 L 1638, 123 L 1638, 23 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/showmap_sound Kevin MacLeod - Sunshine"
+		},
+                {
+			"id": "Sound",
+			"type": "action",
+			"name": "Sound",
+			"tooltip": "Audio file - click to turn off",
+			"path": "M 1421, 31 L 1422, 127 L 1517, 123 L 1516, 28 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/stopsound"
+		}
+	]
+}

@@ -1,0 +1,49 @@
+{
+	"version": "1.0 Beta",
+        "mapSound": "Kevin MacLeod - Inner Light", 
+	"metadata": {
+		"name": "Willow Creek",
+		"author": "Pavel Orlov",
+		"description": "An interactive map of Willow Creek with clickable locations",
+		"created": "2025-11-01",
+		"updated": "2025-11-04"
+	},
+	"backgroundImage": {
+		"file": "maps/Willow Creek.png",
+		"width": 1792,
+		"height": 1024,
+		"alt": "Map of the town"
+	},
+	"shapes": [
+		{
+			"id": "Magnolia-Park",
+			"type": "nature",
+			"name": "Magnolia-Park",
+			"tooltip": "Magnolia Park - Click to enter",
+			"path": "M 374, 598 L 636, 491 L 880, 589 L 629, 704 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/showmap Magnolia Park"
+		},
+		{
+			"id": "Sound",
+			"type": "action",
+			"name": "Sound",
+			"tooltip": "Audio file - click to play",
+			"path": "M 1547, 39 L 1550, 135 L 1643, 135 L 1642, 38 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/showmap_sound Kevin MacLeod - Inner Light"
+		},
+                {
+			"id": "Sound",
+			"type": "action",
+			"name": "Sound",
+			"tooltip": "Audio file - click to turn off",
+			"path": "M 1429, 40 L 1431, 136 L 1526, 133 L 1524, 39 Z",
+			"color": "#FF00FF",
+			"opacity": 0.3,
+			"script": "/stopsound"
+		}
+	]
+}
