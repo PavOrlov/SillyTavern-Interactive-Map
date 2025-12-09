@@ -1,0 +1,188 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "SillyTavern Interactive Map Schema",
+	"description": "JSON Schema for validating interactive map configuration",
+	"type": "object",
+	"required": ["version", "metadata", "backgroundImage", "shapes"],
+	"properties": {
+		"version": {
+			"type": "string",
+			"description": "Map version in semantic versioning format",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$",
+			"examples": ["1.0 Beta"]
+		},
+		"metadata": {
+			"type": "object",
+			"description": "Metainformation about the map",
+			"required": ["name", "author", "description"],
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Map display name",
+					"minLength": 1,
+					"maxLength": 100,
+					"examples": ["Willow Creek", "Wisteria Lane"]
+				},
+				"author": {
+					"type": "string",
+					"description": "Author of the map",
+					"minLength": 1,
+					"maxLength": 100,
+					"examples": ["Pavel Orlov"]
+				},
+				"description": {
+					"type": "string",
+					"description": "Map description",
+					"minLength": 1,
+					"maxLength": 500,
+					"examples": ["An interactive map of Willow Creek with clickable locations"]
+				},
+				"created": {
+					"type": "string",
+					"description": "Date of creation",
+					"format": "date",
+					"examples": ["2025-11-01"]
+				},
+				"updated": {
+					"type": "string",
+					"description": "Last updated date",
+					"format": "date",
+					"examples": ["2025-11-04"]
+				}
+			},
+			"additionalProperties": false
+		},
+		"backgroundImage": {
+			"type": "object",
+			"description": "Information about the map background image",
+			"required": ["file", "width", "height"],
+			"properties": {
+				"file": {
+					"type": "string",
+					"description": "Path to the image file (relative to the extension folder)",
+					"minLength": 1,
+					"examples": ["maps/Willow Creek.png", "maps/WisteriaLane.png"]
+				},
+				"width": {
+					"type": "integer",
+					"description": "Image width in pixels",
+					"minimum": 1,
+					"examples": [1792]
+				},
+				"height": {
+					"type": "integer",
+					"description": "Image height in pixels",
+					"minimum": 1,
+					"examples": [1024]
+				},
+				"alt": {
+					"type": "string",
+					"description": "Alternative text description of the image",
+					"minLength": 1,
+					"maxLength": 200,
+					"examples": ["Willow Creek Map"]
+				}
+			},
+			"additionalProperties": false
+		},
+		"shapes": {
+			"type": "array",
+			"description": "An array of interactive locations on the map",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"description": "Interactive location",
+				"required": ["id", "type", "name", "tooltip", "path", "color", "script"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique location identifier",
+						"pattern": "^[a-z0-9-]+$",
+						"minLength": 1,
+						"maxLength": 50,
+						"examples": ["Willow Creek-player-house", "wisteria-garden"]
+					},
+					"type": {
+						"type": "string",
+						"description": "Location type for classification",
+						"enum": ["residence", "shop", "nature", "custom"],
+						"examples": ["residence", "shop"]
+					},
+					"name": {
+						"type": "string",
+						"description": "Display name of the location",
+						"minLength": 1,
+						"maxLength": 100,
+						"examples": ["Character House", "Police"]
+					},
+					"tooltip": {
+						"type": "string",
+						"description": "Hover tooltip text",
+						"minLength": 1,
+						"maxLength": 200,
+						"examples": ["Character House - Click to enter"]
+					},
+					"path": {
+						"type": "string",
+						"description": "SVG coordinates of the location outline",
+						"pattern": "^[MmLlHhVvCcSsQqTtAaZz\\s\\d.,-]+$",
+						"minLength": 5,
+						"examples": ["M 150 500 L 193 385 L 261 345 L 330 400 Z"]
+					},
+					"color": {
+						"type": "string",
+						"description": "HEX color for highlighting on hover",
+						"pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+						"examples": ["#CC0000", "#0000CC", "#00CC00"]
+					},
+					"opacity": {
+						"type": "number",
+						"description": "Backlight transparency (0.0-1.0)",
+						"minimum": 0,
+						"maximum": 1,
+						"examples": [0.3, 0.5]
+					},
+					"script": {
+						"type": "string",
+						"description": "STScript commands executed on click",
+						"minLength": 1,
+						"maxLength": 500,
+						"examples": ["/go flux | /bg bedroom | /sys {{user}} returns home and goes to bed"]
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"additionalProperties": false,
+	"examples": [
+		{
+			"version": "1.0 Beta",
+			"metadata": {
+				"name": "Sample Map",
+				"author": "Pavel Orlov",
+				"description": "An example of an interactive map",
+				"created": "2025-11-01",
+				"updated": "2025-11-04"
+			},
+			"backgroundImage": {
+				"file": "maps/Sample.png",
+				"width": 1792,
+				"height": 1024,
+				"alt": "Example map"
+			},
+			"shapes": [
+				{
+					"id": "sample-house",
+					"type": "residence",
+					"name": "House",
+					"tooltip": "Click to enter",
+					"path": "M 100 100 L 200 100 L 200 200 L 100 200 Z",
+					"color": "#CC0000",
+					"opacity": 0.3,
+					"script": "/go character | /bg bedroom | /sys {{user}} enters the house"
+				}
+			]
+		}
+	]
+}
