@@ -1,5 +1,4 @@
-
-![Uploading Willow Creek.png…]()
+https://postimg.cc/62RZfMpP
 
 # SillyTavern-Interactive Map Extension
 
