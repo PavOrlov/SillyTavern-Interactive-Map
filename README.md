@@ -306,5 +306,6 @@ The extension includes protection against path traversal attacks:
 
 If you liked it and would like to treat the author to a cup of coffee: https://buymeacoffee.com/pav00rl0v6
 
-![photo_2025-12-09_13-24-43](https://github.com/user-attachments/assets/962bb34e-5e2b-4902-b0a1-b831bad2ce2f)
+![123](https://github.com/user-attachments/assets/eb24d9d8-1440-4155-bcf7-e8fa0bef7b86)
+
 
